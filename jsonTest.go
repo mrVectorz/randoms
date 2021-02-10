@@ -16,9 +16,9 @@ func main(){
 	var state map[string]interface{}
 	var stateJson map[string]interface{}
 	err := yaml.Unmarshal(testJson, &stateJson)
-	  if err != nil {
-    fmt.Println("ERROR: ", err)
-  }
+		if err != nil {
+		fmt.Println("ERROR: ", err)
+	}
 	err = yaml.Unmarshal(testYaml, &state)
 	if err != nil {
 		fmt.Println("ERROR: ", err)
@@ -26,11 +26,11 @@ func main(){
 
 	// JSON
 	fmt.Println("JSON")
-  interfaces := stateJson["interfaces"]
-  for _, iface := range interfaces.([]interface{}) {
-    name := iface.(map[string]interface{})["name"]
-    fmt.Println(reflect.TypeOf(name.(string)))
-    fmt.Println(name.(string))
+	interfaces := stateJson["interfaces"]
+	for _, iface := range interfaces.([]interface{}) {
+		name := iface.(map[string]interface{})["name"]
+		fmt.Println(reflect.TypeOf(name.(string)))
+		fmt.Println(name.(string))
 	}
 	// YAML
 	fmt.Println("\nYAML")
