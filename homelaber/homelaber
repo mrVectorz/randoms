@@ -1,0 +1,147 @@
+#!/bin/bash
+confFile="/etc/homelaber/homelaber.json"
+
+log() {
+	ts=$(date +"%x %T")
+	scriptName="homelaber"
+	preffix="${ts} ${scriptName}"
+	case $1 in
+		ERROR)
+			echo -e "${preffix} ERROR -" ${@:2}
+			;;
+		WARNING)
+			echo -e "${preffix} WARNING -" ${@:2}
+			;;
+		INFO)
+			echo -e "${preffix} INFO -" ${@:2}
+			;;
+		*)
+			echo -e "${preffix} INFO -" ${@:2}
+			;;
+	esac
+}
+
+# exit 5 code for config errors
+validateConfig() {
+	log INFO "Validating config: ${confFile}"
+	# validate if config file exists
+	if [ ! -f ${confFile} ] ; then
+		log ERROR "Configuration file for the service not found. Exiting"
+		exit 5
+	fi
+
+	# validate json is good
+	if ! jq . ${confFile} &>/dev/null; then
+		log ERROR "Bad json config"
+		exit 5
+	fi
+	
+	# validate that the services have containerImage, execCmd and stopCmd set
+	reqSettings=(containerImage execCmd stopCmd)
+	for setting in ${reqSettings[*]}; do
+		if jq -r '.services[] | .'${setting}'' ${confFile} | grep -q null; then
+			log ERROR "Service is missing required setting: ${setting}\n"
+			exit 5
+		fi
+	done
+	log INFO "Successfully validated config: ${confFile}"
+}
+
+# TODO: Implement timeouts and retries
+pullImages() {
+	for img in $(jq -r '.services[].containerImage' ${confFile}); do
+		podman pull $img
+		if [ $? != 0 ] ; then
+			log WARNING "podman failed to pull image $img"
+		fi
+	done
+}
+
+startService() {
+	eval $(jq -r '.services.'${1}'.execCmd' ${confFile})
+	if [ $? != 0 ] ; then
+		log ERROR "Service ${1} failed to start"
+		exit 1
+	fi
+	log INFO "Started service ${1}"
+}
+
+stopService() {
+	eval $(jq -r '.services.'${1}'.stopCmd' ${confFile})
+	if [ $? != 0 ] ; then
+		log ERROR "Service ${1} failed to stop"
+		exit 1
+	fi
+	log INFO "Stopped service ${1}"
+}
+
+# TODO: Implement timeouts and retries
+updateImages() {
+	for svc in $(jq -r '.services | keys[]' ${confFile}); do
+		if [ $(jq -r '.services.'${svc}'.skipUpdate' ${confFile}) == "true" ] ; then
+			log INFO "Skipping update for ${svc}"
+			continue
+		fi
+		containerImage=$(jq -r '.services.'${svc}'.containerImage' ${confFile})
+		svcVersion=$(podman inspect --type container	--format "{{.ImageID}}" ${svc})
+		imgVersion=$(podman inspect --type image	--format "{{.Id}}" ${containerImage})
+		if [ ${imgVersion} != ${svcVersion} ] ; then
+			log INFO "Updating ${svc}. Stopping the container now"
+			log INFO "${svc} current image ${svcVersion} new image ${imgVersion}"
+			stopService ${svc}
+			startService ${svc}
+			log INFO "Restarted the container ${svc}"
+		fi
+	done
+}
+
+startServices() {
+	for svc in $(jq -r '.services | keys[]' ${confFile}); do
+		if [ $(jq -r '.services.'${svc}'.isEnabled' ${confFile}) == "false" ] ; then
+			log INFO "${svc} is not enabled. Not starting."
+			continue
+		fi
+		if ! $(podman ps --all --format "{{.Names}}" | grep -q ${svc}) ; then
+			startService ${svc}
+		elif ! $(podman ps --format "{{.Names}}" | grep -q ${svc}) ; then
+			podman start ${svc}
+		else
+			log INFO "${svc} already running"
+		fi
+	done
+	log INFO "Started all services"
+}
+
+stopServices() {
+	for svc in $(jq -r '.services | keys[]' ${confFile}); do
+		stopService ${svc}
+	done
+	log INFO "Stopped all services"
+}
+
+serverCleanup() {
+	podman volume prune -f
+	podman image prune -f
+}
+
+main() {
+	while :; do
+		validateConfig
+		startServices
+		pullImages
+		updateImages
+		serverCleanup
+		#TODO: move to a set config function or something
+		sleepTime=$(jq -r '.global.sleepTime' ${confFile})
+		if [ sleepTime == "null" ]; then
+			sleepTime=1d
+		fi
+		log INFO "Sleeping for: ${sleepTime}"
+		sleep $sleepTime
+	done
+}
+
+main
+#stopServices
+#startServices
+

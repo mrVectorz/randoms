@@ -1,0 +1,13 @@
+[Unit]
+Description=homelaber manages homelab services
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/bin/sleep 60
+ExecStart=/usr/local/bin/homelaber
+TimeoutSec=180
+
+[Install]
+WantedBy=multi-user.target

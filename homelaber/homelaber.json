@@ -1,0 +1,70 @@
+{
+	"global": {
+		"sleepTime": "1d"
+	},
+	"services": {
+		"sonarr": {
+			"containerImage": "lscr.io/linuxserver/sonarr",
+			"execCmd": "podman run -d --name=sonarr -e PUID=1001 -e PGID=1001 -e TZ=America/Toronto -p 8989:8989 -v /home/user/sonarr/:/config:Z -v /media/media0/:/data:z --restart unless-stopped lscr.io/linuxserver/sonarr",
+			"stopCmd": "podman stop sonarr && podman rm sonarr"
+		},
+		"radarr": {
+			"containerImage": "lscr.io/linuxserver/radarr",
+			"execCmd": "podman run -d --name=radarr -e PUID=1001 -e PGID=1001 -e TZ=America/Toronto -p 7878:7878 -v /home/user/radarr/:/config:Z -v /media/media0/:/data:z --restart unless-stopped lscr.io/linuxserver/radarr",
+			"stopCmd": "podman stop radarr && podman rm radarr"
+		},
+		"sabnzbd": {
+			"containerImage": "lscr.io/linuxserver/sabnzbd",
+			"execCmd": "podman run -d --name=sabnzbd   -e PUID=1001  -e PGID=1001  -e TZ=America/Toronto   -p 8080:8080  -p 9090:9090  -v /home/user/sabnzbd:/config:Z   -v /media/media0/:/data:z   --restart unless-stopped  lscr.io/linuxserver/sabnzbd",
+			"stopCmd": "podman stop sabnzbd && podman rm sabnzbd"
+		},
+		"plex": {
+			"containerImage": "lscr.io/linuxserver/plex",
+			"execCmd": "podman run -d --name=plex --net=host  -e PUID=1001  -e PGID=1001  -e VERSION=docker --security-opt unmask=/sys/dev --device=/dev/dri:/dev/dri -v /home/user/plex:/config:Z  -v /media/media0/:/media0:z --restart unless-stopped  lscr.io/linuxserver/plex",
+			"stopCmd": "podman stop plex && podman rm plex"
+		},
+		"nextcloud": {
+			"containerImage": "lscr.io/linuxserver/nextcloud",
+			"execCmd": "podman run -d --name=nextcloud  -e PUID=1001  -e PGID=1001  -e TZ=America/Toronto -p 443:443  -v /home/user/nextcloud:/config:Z -v /media/cloud0:/data:z  --restart unless-stopped  lscr.io/linuxserver/nextcloud",
+			"stopCmd": "podman stop nextcloud && podman rm nextcloud"
+		},
+		"pihole": {
+			"containerImage": "pihole/pihole:latest",
+			"execCmd": "podman run -d --name=pihole -e PUID=1001  -e PGID=1001  -e TZ=America/Toronto -p 5353:53/tcp -p 5353:53/udp -p 6767:67/udp -p 8081:80/tcp -v /home/user/pihole/pihole:/etc/pihole:Z -v /home/user/pihole/dnsmasq.d:/etc/dnsmasq.d:Z --cap-add=NET_ADMIN,CAP_NET_BIND_SERVICE --restart unless-stopped pihole/pihole:latest",
+			"stopCmd": "podman stop pihole && podman rm pihole",
+			"skipUpdate": "true",
+			"isEnabled": "false"
+		},
+		"duckdns": {
+			"containerImage": "lscr.io/linuxserver/duckdns",
+			"execCmd": "podman run -d --name=duckdns  -e PUID=1001  -e PGID=1001  -e TZ=America/Toronto -e SUBDOMAINS=\"hikeallday,home-lab\" -e TOKEN=9950ba23-29aa-4157-a083-65cd95dead8a -e LOG_FILE=true  -v /home/user/duckdns:/config:Z --restart unless-stopped  lscr.io/linuxserver/duckdns",
+			"stopCmd": "podman stop duckdns && podman rm duckdns"
+		},
+		"transmission": {
+			"containerImage": "lscr.io/linuxserver/transmission",
+			"execCmd": "podman run -d --name=transmission -e PUID=1001  -e PGID=1001  -e TZ=America/Toronto -e TRANSMISSION_WEB_HOME=/flood-for-transmission/ -e USER=user  -e PASS=user  -p 9091:9091  -p 51413:51413  -p 51413:51413/udp -v /home/user/transmission:/config:Z -v /media/media0/f1:/downloads:z  -v /media/media0/watched.torrents:/watch:z  --restart unless-stopped  lscr.io/linuxserver/transmission",
+			"stopCmd": "podman stop transmission && podman rm transmission",
+			"skipUpdate": "true",
+                        "isEnabled": "false"
+		},
+		"adguardhome": {
+			"containerImage": "docker.io/adguard/adguardhome",
+			"execCmd": "podman run -d --name adguardhome -e PUID=1001  -e PGID=1001  -e TZ=America/Toronto -p 53:53/tcp -p 53:53/udp -p 8082:80/tcp -p 8443:443/tcp -p 443:443/udp -p 3000:3000/tcp -v /home/user/adguardhome:/config:Z --cap-add=NET_ADMIN,CAP_NET_BIND_SERVICE --restart unless-stopped docker.io/adguard/adguardhome",
+			"stopCmd": "podman stop adguardhome && podman rm adguardhome",
+			"skipUpdate": "true"
+		},
+		"tdarr": {
+			"containerImage": "ghcr.io/haveagitgat/tdarr",
+			"execCmd": "podman run -d --name tdarr -e PUID=1001 -e PGID=1001 -e TZ=America/Toronto -p 8265:8265/tcp -p 8266:8266/tcp -v /home/user/tdarr/server:/app/server:Z -v /home/user/tdarr/configs:/app/configs:Z -v /home/user/tdarr/logs:/app/logs:Z -v /media/media0/:/media:z -v /media/media0/transcode_cache:/temp:Z -e serverIP=0.0.0.0 -e serverPort=8266 -e internalNode=true -e nodeName=InternalNode --restart unless-stopped ghcr.io/haveagitgat/tdarr",
+			"stopCmd": "podman stop tdarr && podman rm tdarr",
+			"skipUpdate": "true",
+                        "isEnabled": "false"
+		},
+		"homeassistant": {
+			"containerImage": "lscr.io/linuxserver/homeassistant:latest",
+			"execCmd": "podman run -d --name=homeassistant --net=host -e PUID=1001 -e PGID=1001 -e TZ=America/Toronto -v /home/user/homeassistant:/config:Z --device /dev/bus/usb/001/005:/dev/bus/usb/001/005 --restart unless-stopped lscr.io/linuxserver/homeassistant:latest",
+			"stopCmd": "podman stop homeassistant && podman rm homeassistant",
+			"skipUpdate": "false"
+    }
+  }
+}
