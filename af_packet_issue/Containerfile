@@ -1,0 +1,11 @@
+# Use Fedora base image
+FROM fedora:latest
+
+# Install tcpdump and clean up the cache
+RUN dnf install -y go wget \
+    && dnf clean all
+
+RUN wget https://raw.githubusercontent.com/mrVectorz/randoms/refs/heads/master/af_packet_issue/batch_af_socket_gen.go
+
+# Set the default command to run tcpdump with a basic capture option
+CMD ["go", "run", "batch_af_socket_gen.go"]
